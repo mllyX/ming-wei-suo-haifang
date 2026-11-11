@@ -1,5 +1,8 @@
 # 明朝卫所与海防鱼骨纪事表
 
+> **在线预览**：<https://mllyx.github.io/ming-wei-suo-haifang/>
+> **仓库地址**：<https://github.com/mllyX/ming-wei-suo-haifang>
+
 以 SVG + HTML 实现的**可调节鱼骨纪事长卷**，记录明代卫所制度与海防体系的 44 件大事（1368—1644）。
 版式算法取自博客园《利用 svg 结合 html 实现时间轴上下斜着展示子节点的鱼骨图》：
 **固定骨刺倾角，按 `水平位移 = 离轴高度 ÷ tan(倾角)` 逐层算点连线**，再叠加一层"矩形避让"，
@@ -83,6 +86,25 @@ node tools/verify.js segments=2   # 真实字体渲染自检（调用本机 Chro
 
 **本次验收结果**：8 种版式组合（长卷 / 双脊 / 三脊 / 60° / 86° / 三主题 / 加图位 / 隐藏要点 / 大字号）
 在真实字体度量下 **文字互撞 0 处、出血越界 0 处、文字压线 0 处、标题截断 0 处**。
+
+---
+
+## 五点五、推送到 GitHub（本机网络受限时的做法）
+
+本机到 `github.com:443` 的 git 传输会被重置（`Recv failure: Connection was reset`），
+但 `api.github.com` 正常。因此推送有两条路：
+
+```bash
+# ① 网络正常时，常规方式
+git push -u origin main
+
+# ② 网络受限时，走 GitHub API 逐个上传对象（不经过 github.com 的 git 端口）
+GITHUB_TOKEN=ghp_xxx node tools/push-api.js mllyX ming-wei-suo-haifang
+```
+
+`push-api.js` 会用 `git cat-file` 读取**精确的对象字节**，按同一 tree/author/message 重建提交，
+因此远端提交 SHA 与本地完全一致，不会出现"内容相同但历史分叉"。
+令牌只从环境变量读取，不写入任何文件。
 
 ---
 
