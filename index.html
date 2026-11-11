@@ -56,10 +56,22 @@
   #canvas{display:inline-block;background:#fff;box-shadow:0 6px 30px rgba(60,50,30,.18);line-height:0}
   #canvas svg{display:block}
   /* ---------- 抽屉 ---------- */
-  .drawer{width:0;flex:0 0 0;overflow:hidden;background:var(--panel);border-left:1px solid var(--line);
-          transition:flex-basis .2s ease,width .2s ease}
-  .drawer.open{width:352px;flex:0 0 352px}
-  .drawer-inner{width:352px;padding:16px 16px 48px;height:100%;overflow-y:auto}
+  .drawer{width:0;flex:0 0 0;overflow:hidden;background:var(--panel);border-left:0 solid transparent;
+          transition:flex-basis .22s ease,width .22s ease}
+  .drawer.open{width:352px;flex:0 0 352px;border-left:1px solid var(--line)}
+  .drawer.open.collapsed{width:0;flex-basis:0;border-left-width:0}
+  .drawer-inner{width:352px;padding:0 16px 48px;height:100%;overflow-y:auto}
+  .drawer-head{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:6px;
+               margin:0 -16px 12px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .drawer-head .dh{font-size:11px;letter-spacing:2px;color:var(--ink3);font-weight:600;margin-right:auto}
+  .drawer-tab{position:fixed;right:0;top:46%;z-index:44;writing-mode:vertical-rl;letter-spacing:2px;
+              padding:14px 7px;border:0;border-radius:8px 0 0 8px;background:var(--accent);color:#fff8ea;
+              font-size:12px;cursor:pointer;opacity:0;pointer-events:none;
+              transform:translateY(-50%) translateX(6px);
+              transition:opacity .2s ease,transform .2s ease,background .15s;
+              box-shadow:-2px 0 12px rgba(40,30,15,.18)}
+  body.drawer-rail .drawer-tab{opacity:1;pointer-events:auto;transform:translateY(-50%)}
+  .drawer-tab:hover{background:#8f2f25}
   /* ---------- 控件 ---------- */
   .grp{margin-bottom:16px}
   .grp > h3{margin:0 0 8px;font-size:11px;letter-spacing:2px;color:var(--ink3);font-weight:600;
@@ -104,7 +116,8 @@
   .imgbox .ph{color:var(--ink3);font-size:12px;padding:18px 0}
   .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
   .btns button{font-size:12px;padding:4px 9px}
-  .close{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:20px;line-height:1;color:var(--ink3);cursor:pointer;padding:2px 6px}
+  .close{border:0;background:transparent;font-size:20px;line-height:1;color:var(--ink3);cursor:pointer;padding:0 4px}
+  .close:hover{color:var(--ink)}
   /* ---------- 筛选淡化 ---------- */
   #canvas .ev{transition:opacity .18s}
   #canvas .ev.hide{opacity:.1}
@@ -126,8 +139,10 @@
   @media (max-width:900px){
     .panel{position:fixed;left:0;top:0;bottom:0;z-index:30;transform:translateX(-100%);transition:.2s;box-shadow:0 0 30px rgba(0,0,0,.2)}
     body.panel-open .panel{transform:none}
-    .drawer.open{width:100%;flex-basis:100%}
+    .drawer.open{position:fixed;right:0;top:0;bottom:0;width:100%;flex-basis:auto;z-index:50;
+                 box-shadow:-8px 0 30px rgba(0,0,0,.22)}
     .drawer-inner{width:100%}
+    .drawer-tab{display:none}
   }
 </style>
 </head>
@@ -226,6 +241,7 @@
 
 <div class="toast" id="toast"></div>
 <button class="panel-tab" id="panelTab" title="展开调节面板">调节</button>
+<button class="drawer-tab" id="drawerTab" title="展开事件详情">详情</button>
 
 <script>try{if(localStorage.getItem('ming-fishbone-panel')==='1')document.documentElement.classList.add('panel-collapsed');}catch(e){}</script>
 
@@ -351,7 +367,11 @@
     var img = state.images[id];
 
     var html = '' +
-      '<button class="close" id="dClose">×</button>' +
+      '<div class="drawer-head">' +
+        '<span class="dh">事件详情</span>' +
+        '<button class="mini" id="dRail" title="收起抽屉（只留右边缘页签）">收起 ››</button>' +
+        '<button class="close" id="dClose" title="关闭（Esc）">×</button>' +
+      '</div>' +
       '<span class="d-tag" style="background:' + color + '">' + ev.tag + '</span>' +
       '<div class="d-year">' + ev.era + '　' + ev.y + '</div>' +
       '<div class="d-title">' + esc(ov.title || ev.title) + '</div>' +
@@ -382,8 +402,12 @@
 
     $('#drawerBody').innerHTML = html;
     $('#drawer').classList.add('open');
+    setDrawerRail(false);                       /* 选中新事件时总是展开 */
+    $('#drawerTab').textContent = '详情 · ' + ev.y;
 
     $('#dClose').onclick = function () { closeDrawer(); };
+    $('#dRail').onclick = function () { setDrawerRail(true); };
+    $('#drawerTab').onclick = function () { setDrawerRail(false); };
     $('#dUpload').onclick = function () { $('#dFile').click(); };
     $('#dFile').onchange = function (e) { if (e.target.files[0]) handleFile(e.target.files[0]); };
     if ($('#dDrop')) $('#dDrop').onclick = function () {
@@ -420,7 +444,16 @@
 
   function closeDrawer() {
     $('#drawer').classList.remove('open');
+    setDrawerRail(false);
     currentId = null;
+  }
+
+  /* 抽屉收起：只留右边缘的竖排页签 */
+  function setDrawerRail(on) {
+    var d = $('#drawer');
+    if (on && !d.classList.contains('open')) return;
+    d.classList.toggle('collapsed', !!on);
+    document.body.classList.toggle('drawer-rail', !!on);
   }
 
   function handleFile(file) {
