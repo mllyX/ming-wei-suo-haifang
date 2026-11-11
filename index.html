@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>明朝卫所与海防鱼骨纪事表 · SVG 可调节版</title>
+<style>
+  :root{
+    --paper:#f6f1e6; --ink:#26313b; --ink2:#59656f; --ink3:#8c96a0;
+    --line:#ddd0b6; --panel:#fffdf7; --accent:#a63a2e; --bg:#eee7d8;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    display:flex;flex-direction:column;background:var(--bg);color:var(--ink);
+    font:13.5px/1.65 "Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ---------- 顶栏 ---------- */
+  .bar{display:flex;align-items:center;gap:18px;padding:9px 18px;background:var(--panel);
+       border-bottom:1px solid var(--line);z-index:20;flex:0 0 auto;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .seal{width:34px;height:34px;border-radius:4px;background:var(--accent);color:#fff8ea;
+        display:grid;place-items:center;font:20px/1 "Songti SC",SimSun,serif;transform:rotate(-3deg);
+        box-shadow:0 1px 4px rgba(150,40,30,.35);flex:0 0 auto}
+  .brand h1{margin:0;font:600 16px/1.2 "Songti SC",SimSun,serif;letter-spacing:1px;white-space:nowrap}
+  .brand p{margin:2px 0 0;font-size:11px;color:var(--ink3);letter-spacing:.4px;white-space:nowrap}
+  .tools{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  button{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);
+         padding:5px 11px;border-radius:6px;cursor:pointer;transition:.15s;white-space:nowrap}
+  button:hover{background:#f6f0e2;border-color:#c9b995}
+  button.primary{background:var(--ink);color:#fdf8ec;border-color:var(--ink)}
+  button.primary:hover{background:#1b242c}
+  button.icon{padding:5px 9px;min-width:32px}
+  #zoomVal{min-width:46px;text-align:center;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  /* ---------- 布局 ---------- */
+  .layout{flex:1;display:flex;min-height:0}
+  .panel{width:288px;flex:0 0 288px;overflow-y:auto;background:var(--panel);
+         border-right:1px solid var(--line);padding:12px 14px 40px}
+  #stage{flex:1;min-width:0;overflow:auto;padding:18px;position:relative}
+  #canvas{display:inline-block;background:#fff;box-shadow:0 6px 30px rgba(60,50,30,.18);line-height:0}
+  #canvas svg{display:block}
+  /* ---------- 抽屉 ---------- */
+  .drawer{width:0;flex:0 0 0;overflow:hidden;background:var(--panel);border-left:1px solid var(--line);
+          transition:flex-basis .2s ease,width .2s ease}
+  .drawer.open{width:352px;flex:0 0 352px}
+  .drawer-inner{width:352px;padding:16px 16px 48px;height:100%;overflow-y:auto}
+  /* ---------- 控件 ---------- */
+  .grp{margin-bottom:16px}
+  .grp > h3{margin:0 0 8px;font-size:11px;letter-spacing:2px;color:var(--ink3);font-weight:600;
+            text-transform:uppercase;border-bottom:1px dashed var(--line);padding-bottom:5px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:9px 0;font-size:12.5px}
+  .row label{color:var(--ink2);white-space:nowrap}
+  .row .val{font:11px/1 ui-monospace,Consolas,monospace;color:var(--accent);min-width:38px;text-align:right}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:3px;background:#ded1b6;outline:none;margin:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+        background:var(--ink);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:pointer}
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .seg button{border:0;border-radius:0;flex:1;padding:5px 0;background:#fff;font-size:12px}
+  .seg button + button{border-left:1px solid var(--line)}
+  .seg button.on{background:var(--ink);color:#fdf8ec}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:20px;
+        padding:2px 10px;font-size:12px;background:#fff;cursor:pointer;user-select:none}
+  .chip i{width:7px;height:7px;border-radius:2px;transform:rotate(45deg);display:block}
+  .chip.on{background:var(--ink);color:#fdf8ec;border-color:var(--ink)}
+  .chip.on i{background:#fdf8ec !important}
+  .switch{display:flex;align-items:center;justify-content:space-between;margin:9px 0;font-size:12.5px;color:var(--ink2)}
+  .switch input{appearance:none;width:34px;height:18px;border-radius:10px;background:#ded1b6;position:relative;cursor:pointer;transition:.2s}
+  .switch input:checked{background:var(--ink)}
+  .switch input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+        background:#fff;transition:.2s}
+  .switch input:checked::after{left:18px}
+  input[type=text],input[type=url],textarea{
+    width:100%;font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--line);
+    border-radius:5px;background:#fff;color:var(--ink);outline:none}
+  input[type=text]:focus,input[type=url]:focus,textarea:focus{border-color:#bfa87c}
+  .hint{font-size:11px;color:var(--ink3);line-height:1.6;margin:6px 0 0}
+  /* ---------- 抽屉内容 ---------- */
+  .d-year{font:11px/1.4 ui-monospace,Consolas,monospace;color:var(--accent);letter-spacing:1px}
+  .d-title{font:600 19px/1.45 "Songti SC",SimSun,serif;margin:6px 0 10px}
+  .d-tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:20px;color:#fff;margin-bottom:4px}
+  .d-sec{margin:14px 0;border-top:1px dashed var(--line);padding-top:12px}
+  .d-sec h4{margin:0 0 8px;font-size:11px;letter-spacing:1.6px;color:var(--ink3);font-weight:600}
+  .d-src{font-size:11.5px;color:var(--ink2);background:#f6f1e4;border-left:2px solid #d9c9a5;padding:6px 9px;border-radius:0 4px 4px 0}
+  .d-more{font-size:12.5px;color:var(--ink2);line-height:1.8}
+  .imgbox{border:1px dashed var(--line);border-radius:6px;padding:8px;text-align:center;background:#fff}
+  .imgbox img{max-width:100%;border-radius:4px;display:block;margin:0 auto 8px}
+  .imgbox .ph{color:var(--ink3);font-size:12px;padding:18px 0}
+  .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .btns button{font-size:12px;padding:4px 9px}
+  .close{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:20px;line-height:1;color:var(--ink3);cursor:pointer;padding:2px 6px}
+  /* ---------- 筛选淡化 ---------- */
+  #canvas .ev{transition:opacity .18s}
+  #canvas .ev.hide{opacity:.1}
+  /* ---------- 提示条 ---------- */
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);
+         color:#fdf8ec;padding:9px 18px;border-radius:8px;font-size:12.5px;opacity:0;pointer-events:none;
+         transition:.25s;z-index:99}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* ---------- 打印 ---------- */
+  @media print{
+    @page{size:A3 landscape;margin:8mm}
+    body{display:block;background:#fff}
+    .bar,.panel,.drawer,.toast,.hintbar{display:none !important}
+    .layout{display:block}
+    #stage{overflow:visible;padding:0;background:#fff}
+    #canvas{box-shadow:none;width:100% !important}
+    #canvas svg{width:100% !important;height:auto !important}
+  }
+  @media (max-width:900px){
+    .panel{position:fixed;left:0;top:0;bottom:0;z-index:30;transform:translateX(-100%);transition:.2s;box-shadow:0 0 30px rgba(0,0,0,.2)}
+    body.panel-open .panel{transform:none}
+    .drawer.open{width:100%;flex-basis:100%}
+    .drawer-inner{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">
+    <span class="seal">明</span>
+    <div>
+      <h1>明朝卫所与海防鱼骨纪事表</h1>
+      <p>SVG 鱼骨年表 · 44 条卫所与海防大事 · 1368—1644 · 点击骨刺可加图改文</p>
+    </div>
+  </div>
+  <div class="tools">
+    <button class="icon" id="btnPanel" title="调节面板">☰</button>
+    <button class="icon" id="zoomOut" title="缩小">−</button>
+    <span id="zoomVal">60%</span>
+    <button class="icon" id="zoomIn" title="放大">+</button>
+    <button id="btnFit">适应窗口</button>
+    <button id="btnSvg" class="primary">导出 SVG</button>
+    <button id="btnPng">导出 PNG</button>
+    <button id="btnPrint">打印</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="panel" id="panel">
+    <div class="grp">
+      <h3>版式</h3>
+      <div class="row"><label>分卷</label>
+        <div class="seg" id="segSegments">
+          <button data-v="1">长卷</button><button data-v="2">双脊</button><button data-v="3">三脊</button>
+        </div>
+      </div>
+      <div class="row"><label>骨刺倾角</label><span class="val" id="vAngle">75°</span></div>
+      <input type="range" id="angle" min="55" max="86" step="1" value="75">
+      <div class="row"><label>行距</label><span class="val" id="vRowGap">14</span></div>
+      <input type="range" id="rowGap" min="6" max="28" step="1" value="14">
+      <div class="row"><label>列宽</label><span class="val" id="vColW">216</span></div>
+      <input type="range" id="colW" min="160" max="300" step="2" value="216">
+      <div class="row"><label>年距（横向拉伸）</label><span class="val" id="vPx">8</span></div>
+      <input type="range" id="pxPerYear" min="3" max="18" step="1" value="8">
+      <div class="row"><label>骨刺间距</label><span class="val" id="vGap">26</span></div>
+      <input type="range" id="gapX" min="12" max="56" step="2" value="26">
+      <div class="row"><label>正文字号</label><span class="val" id="vFs">12</span></div>
+      <input type="range" id="fs" min="10" max="15" step="0.5" value="12">
+    </div>
+
+    <div class="grp">
+      <h3>主题</h3>
+      <div class="seg" id="segTheme">
+        <button data-v="xuan">宣纸</button><button data-v="qinghua">青花</button><button data-v="moye">墨夜</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>显示</h3>
+      <div class="switch"><span>二级要点</span><input type="checkbox" id="showBullets" checked></div>
+      <div class="switch"><span>图片占位框</span><input type="checkbox" id="showImgSlot"></div>
+      <div class="switch"><span>年代底色</span><input type="checkbox" id="showEraBands" checked></div>
+    </div>
+
+    <div class="grp">
+      <h3>筛选</h3>
+      <div class="chips" id="tagChips"></div>
+      <input type="text" id="q" placeholder="按关键词筛选（如 倭 / 温州 / 卫）" style="margin-top:8px">
+      <p class="hint">筛选只是淡化无关骨刺，不改变版式。</p>
+    </div>
+
+    <div class="grp">
+      <h3>图片</h3>
+      <p class="hint">点击画布上任意一条骨刺 → 右侧抽屉里可上传本地图片、粘贴图片网址，或修改标题与要点。图片保存在本机浏览器（localStorage），导出 SVG / PNG 时一并嵌入。</p>
+      <div class="btns"><button id="btnClearImg">清除全部图片</button></div>
+    </div>
+
+    <div class="grp">
+      <h3>数据</h3>
+      <div class="btns">
+        <button id="btnJson">导出 JSON</button>
+        <button id="btnReset">恢复默认</button>
+      </div>
+      <p class="hint">改动内容（图片、改过的文字）与版式参数会自动记录在本机；恢复默认只清版式，不删图片。</p>
+    </div>
+  </aside>
+
+  <main id="stage"><div id="canvas"></div></main>
+
+  <aside class="drawer" id="drawer">
+    <div class="drawer-inner" id="drawerBody"></div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="src/data.js"></script>
+<script src="src/measure.js"></script>
+<script src="src/layout.js"></script>
+<script src="src/render.js"></script>
+<script>
+(function () {
+  'use strict';
+  var L = window.FBLayout, R = window.FBRender, D = window.FB_DATA;
+  var $ = function (s) { return document.querySelector(s); };
+  var KEY = 'ming-fishbone-v1';
+
+  var DEF = {
+    segments: 2, angle: 75, rowGap: 14, colW: 216, pxPerYear: 8, gapX: 26, fs: 12,
+    theme: 'xuan', showBullets: true, showImgSlot: false, showEraBands: true
+  };
+
+  var state = {
+    opts: Object.assign({}, DEF),
+    images: {},
+    overrides: {},
+    zoom: 0.6,
+    query: '',
+    tag: null
+  };
+  var scene = null;
+  var currentId = null;
+
+  /* ---------------- 存取 ---------------- */
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        opts: state.opts, images: state.images, overrides: state.overrides
+      }));
+    } catch (e) { toast('本地存储写入失败（图片过大时请减少数量）'); }
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (o.opts) state.opts = Object.assign({}, DEF, o.opts);
+      if (o.images) state.images = o.images;
+      if (o.overrides) state.overrides = o.overrides;
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ---------------- 提示 ---------------- */
+  var toastT = null;
+  function toast(msg) {
+    var el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('on');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { el.classList.remove('on'); }, 2200);
+  }
+
+  /* ---------------- 渲染 ---------------- */
+  function render() {
+    var o = Object.assign({}, state.opts, {
+      titleFs: Math.round(state.opts.fs * 1.26 * 2) / 2,
+      yearFs: Math.round(state.opts.fs * 0.85 * 2) / 2,
+      images: state.images,
+      overrides: state.overrides
+    });
+    scene = L.build(o);
+    var svg = R.render(scene, {});
+    $('#canvas').innerHTML = svg;
+    applyZoom();
+    applyFilter();
+    $('#zoomVal').textContent = Math.round(state.zoom * 100) + '%';
+  }
+
+  function applyZoom() {
+    var svg = $('#canvas svg');
+    if (!svg || !scene) return;
+    svg.setAttribute('width', Math.round(scene.width * state.zoom));
+    svg.setAttribute('height', Math.round(scene.height * state.zoom));
+  }
+
+  function fit() {
+    if (!scene) return;
+    var w = $('#stage').clientWidth - 36;
+    var z = w / scene.width;
+    state.zoom = Math.max(0.35, Math.min(1, z));
+    applyZoom();
+    $('#zoomVal').textContent = Math.round(state.zoom * 100) + '%';
+    if (z < 0.55) toast('已适应窗口：Ctrl + 滚轮可缩放，点击骨刺看史料、加图片');
+  }
+
+  function setZoom(z) {
+    state.zoom = Math.max(0.15, Math.min(2.5, z));
+    applyZoom();
+    $('#zoomVal').textContent = Math.round(state.zoom * 100) + '%';
+  }
+
+  function applyFilter() {
+    var q = state.query.trim().toLowerCase();
+    var map = {};
+    D.events.forEach(function (e) { map[e.id] = e; });
+    Array.prototype.forEach.call(document.querySelectorAll('#canvas .ev'), function (g) {
+      var ev = map[g.getAttribute('data-id')];
+      if (!ev) return;
+      var ov = state.overrides[ev.id] || {};
+      var txt = (ev.era + ev.y + ev.title + (ov.title || '') + ((ov.points || ev.points) || []).join('')).toLowerCase();
+      var okTag = !state.tag || ev.tag === state.tag;
+      var okQ = !q || txt.indexOf(q) >= 0;
+      g.classList.toggle('hide', !(okTag && okQ));
+    });
+  }
+
+  /* ---------------- 抽屉 ---------------- */
+  function openDrawer(id) {
+    currentId = id;
+    var ev = D.events.filter(function (e) { return e.id === id; })[0];
+    if (!ev) return;
+    var ov = state.overrides[id] || {};
+    var th = D.themes[state.opts.theme] || D.themes.xuan;
+    var color = th.tags[ev.tag] || th.accent;
+    var pts = (ov.points || ev.points || []);
+    var img = state.images[id];
+
+    var html = '' +
+      '<button class="close" id="dClose">×</button>' +
+      '<span class="d-tag" style="background:' + color + '">' + ev.tag + '</span>' +
+      '<div class="d-year">' + ev.era + '　' + ev.y + '</div>' +
+      '<div class="d-title">' + esc(ov.title || ev.title) + '</div>' +
+      '<div class="d-sec"><h4>配图</h4>' +
+        '<div class="imgbox">' +
+          (img ? '<img src="' + img + '" alt="">' : '<div class="ph">尚未添加图片<br>可上传本地图，或粘贴网络图片地址</div>') +
+          '<div class="btns">' +
+            '<button id="dUpload">上传图片</button>' +
+            '<button id="dUrl">用网址</button>' +
+            (img ? '<button id="dDrop">移除</button>' : '') +
+          '</div>' +
+          (img ? '<p class="hint">导出 SVG / PNG 时该图会嵌入文件。</p>' : '') +
+        '</div>' +
+        '<input type="file" id="dFile" accept="image/*" style="display:none">' +
+      '</div>' +
+      '<div class="d-sec"><h4>史料</h4>' +
+        '<p class="d-more">' + esc(ev.more || '') + '</p>' +
+        '<div class="d-src">出处：' + esc(ev.src || '') + '</div>' +
+      '</div>' +
+      '<div class="d-sec"><h4>图中文字（可改）</h4>' +
+        '<label class="hint">标题</label><input type="text" id="eTitle" value="' + escAttr(ov.title || ev.title) + '">' +
+        pts.slice(0, 2).map(function (p, i) {
+          return '<label class="hint" style="display:block;margin-top:6px">要点 ' + (i + 1) + '</label>' +
+            '<input type="text" id="eP' + i + '" value="' + escAttr(p) + '">';
+        }).join('') +
+        '<div class="btns"><button id="dSave">保存</button><button id="dRevert">恢复原文</button></div>' +
+      '</div>';
+
+    $('#drawerBody').innerHTML = html;
+    $('#drawer').classList.add('open');
+
+    $('#dClose').onclick = function () { closeDrawer(); };
+    $('#dUpload').onclick = function () { $('#dFile').click(); };
+    $('#dFile').onchange = function (e) { if (e.target.files[0]) handleFile(e.target.files[0]); };
+    if ($('#dDrop')) $('#dDrop').onclick = function () {
+      delete state.images[id]; save(); render(); openDrawer(id); toast('已移除配图');
+    };
+    $('#dUrl').onclick = function () {
+      var u = prompt('粘贴图片网址（http/https 或 data:image/…）', '');
+      if (!u) return;
+      state.images[id] = u.trim();
+      save(); render(); openDrawer(id); toast('已添加网络图片');
+    };
+    $('#dSave').onclick = function () {
+      var t = $('#eTitle').value.trim();
+      var p0 = $('#eP0') ? $('#eP0').value.trim() : '';
+      var p1 = $('#eP1') ? $('#eP1').value.trim() : '';
+      var o = state.overrides[id] || {};
+      o.title = t || ev.title;
+      o.points = [p0, p1].filter(Boolean);
+      if (!o.points.length) o.points = ev.points;
+      state.overrides[id] = o;
+      save(); render(); openDrawer(id); toast('已保存');
+    };
+    $('#dRevert').onclick = function () {
+      delete state.overrides[id]; save(); render(); openDrawer(id); toast('已恢复原文');
+    };
+    var box = $('#drawerBody');
+    ['dragover', 'drop'].forEach(function (t) {
+      box.addEventListener(t, function (e) {
+        e.preventDefault();
+        if (t === 'drop' && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+      });
+    });
+  }
+
+  function closeDrawer() {
+    $('#drawer').classList.remove('open');
+    currentId = null;
+  }
+
+  function handleFile(file) {
+    if (!/^image\//.test(file.type)) { toast('请选择图片文件'); return; }
+    var fr = new FileReader();
+    fr.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        var maxW = 900, sc = Math.min(1, maxW / im.width);
+        var c = document.createElement('canvas');
+        c.width = Math.round(im.width * sc);
+        c.height = Math.round(im.height * sc);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        state.images[currentId] = c.toDataURL('image/jpeg', 0.86);
+        save(); render(); openDrawer(currentId); toast('图片已加入');
+      };
+      im.onerror = function () { toast('图片读取失败'); };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+
+  /* ---------------- 导出 ---------------- */
+  function download(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  }
+
+  function exportSVG() {
+    var svg = R.render(scene, { standalone: true });
+    download(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), '明朝卫所与海防鱼骨纪事表.svg');
+    toast('SVG 已导出');
+  }
+
+  function exportPNG() {
+    var svg = R.render(scene, { standalone: true });
+    var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    var im = new Image();
+    im.onload = function () {
+      var scale = Math.min(2, 16000 / scene.width);
+      var c = document.createElement('canvas');
+      c.width = Math.round(scene.width * scale);
+      c.height = Math.round(scene.height * scale);
+      var ctx = c.getContext('2d');
+      var th = D.themes[state.opts.theme] || D.themes.xuan;
+      ctx.fillStyle = th.bg;
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(im, 0, 0, c.width, c.height);
+      c.toBlob(function (b) {
+        download(b, '明朝卫所与海防鱼骨纪事表.png');
+        toast('PNG 已导出（' + c.width + '×' + c.height + '）');
+      }, 'image/png');
+    };
+    im.onerror = function () { toast('PNG 导出失败：若图片来自网络，请先转存到本地'); };
+    im.src = url;
+  }
+
+  /* ---------------- 工具 ---------------- */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function escAttr(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  /* ---------------- 绑定 ---------------- */
+  function bindRange(id, opt, suffix, fix, labelId) {
+    var el = $('#' + id);
+    var lab = $('#' + (labelId || ('v' + id.charAt(0).toUpperCase() + id.slice(1))));
+    if (!el) return;
+    el.value = state.opts[opt];
+    if (lab) lab.textContent = state.opts[opt] + (suffix || '');
+    el.addEventListener('input', function () {
+      var v = parseFloat(el.value);
+      state.opts[opt] = fix ? fix(v) : v;
+      if (lab) lab.textContent = state.opts[opt] + (suffix || '');
+      schedule();
+    });
+  }
+
+  var raf = 0;
+  function schedule() {
+    if (raf) return;
+    raf = requestAnimationFrame(function () {
+      raf = 0;
+      render();
+      save();
+    });
+  }
+
+  bindRange('angle', 'angle', '°');
+  bindRange('rowGap', 'rowGap', '');
+  bindRange('colW', 'colW', '');
+  bindRange('pxPerYear', 'pxPerYear', '', null, 'vPx');
+  bindRange('gapX', 'gapX', '', null, 'vGap');
+  bindRange('fs', 'fs', '', function (v) { return Math.round(v * 2) / 2; });
+
+  ['showBullets', 'showImgSlot', 'showEraBands'].forEach(function (k) {
+    var el = $('#' + k);
+    el.checked = !!state.opts[k];
+    el.addEventListener('change', function () { state.opts[k] = el.checked; render(); save(); });
+  });
+
+  function bindSeg(sel, opt, after) {
+    var wrap = $(sel);
+    var btns = wrap.querySelectorAll('button');
+    function sync() {
+      Array.prototype.forEach.call(btns, function (b) {
+        b.classList.toggle('on', String(b.getAttribute('data-v')) === String(state.opts[opt]));
+      });
+    }
+    Array.prototype.forEach.call(btns, function (b) {
+      b.onclick = function () {
+        var v = b.getAttribute('data-v');
+        state.opts[opt] = (opt === 'segments') ? parseInt(v, 10) : v;
+        sync();
+        render(); save();
+        if (after) after();
+      };
+    });
+    sync();
+  }
+  bindSeg('#segSegments', 'segments');
+  bindSeg('#segTheme', 'theme', function () { if (currentId) openDrawer(currentId); });
+
+  /* 标签筛选 */
+  var chips = $('#tagChips');
+  var th0 = D.themes[state.opts.theme] || D.themes.xuan;
+  chips.innerHTML = D.tags.map(function (t) {
+    return '<span class="chip" data-tag="' + t + '"><i style="background:' + th0.tags[t] + '"></i>' + t + '</span>';
+  }).join('');
+  Array.prototype.forEach.call(chips.querySelectorAll('.chip'), function (c) {
+    c.onclick = function () {
+      var t = c.getAttribute('data-tag');
+      state.tag = (state.tag === t) ? null : t;
+      Array.prototype.forEach.call(chips.querySelectorAll('.chip'), function (x) {
+        x.classList.toggle('on', x.getAttribute('data-tag') === state.tag);
+      });
+      applyFilter();
+    };
+  });
+
+  $('#q').addEventListener('input', function (e) {
+    state.query = e.target.value;
+    applyFilter();
+  });
+
+  /* 画布交互 */
+  $('#canvas').addEventListener('click', function (e) {
+    var g = e.target.closest ? e.target.closest('.ev') : null;
+    if (g) openDrawer(g.getAttribute('data-id'));
+  });
+
+  /* 拖拽平移 */
+  (function () {
+    var stage = $('#stage'), down = false, sx = 0, sy = 0, sl = 0, st = 0;
+    stage.addEventListener('mousedown', function (e) {
+      if (e.target.closest && e.target.closest('.ev')) return;
+      down = true; sx = e.clientX; sy = e.clientY; sl = stage.scrollLeft; st = stage.scrollTop;
+      stage.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mouseup', function () { down = false; stage.style.cursor = ''; });
+    window.addEventListener('mousemove', function (e) {
+      if (!down) return;
+      stage.scrollLeft = sl - (e.clientX - sx);
+      stage.scrollTop = st - (e.clientY - sy);
+    });
+    stage.addEventListener('wheel', function (e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setZoom(state.zoom * (e.deltaY < 0 ? 1.1 : 0.9));
+    }, { passive: false });
+  })();
+
+  /* 顶栏按钮 */
+  $('#zoomIn').onclick = function () { setZoom(state.zoom * 1.15); };
+  $('#zoomOut').onclick = function () { setZoom(state.zoom / 1.15); };
+  $('#btnFit').onclick = fit;
+  $('#btnSvg').onclick = exportSVG;
+  $('#btnPng').onclick = exportPNG;
+  $('#btnPrint').onclick = function () { window.print(); };
+  $('#btnPanel').onclick = function () { document.body.classList.toggle('panel-open'); };
+
+  $('#btnClearImg').onclick = function () {
+    if (!Object.keys(state.images).length) { toast('当前没有配图'); return; }
+    if (!confirm('确定清除全部配图？此操作不可撤销。')) return;
+    state.images = {}; save(); render(); closeDrawer(); toast('已清除全部配图');
+  };
+
+  $('#btnJson').onclick = function () {
+    var data = { opts: state.opts, images: state.images, overrides: state.overrides,
+                 exportedAt: new Date().toISOString() };
+    download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), '鱼骨纪事表-数据.json');
+    toast('JSON 已导出');
+  };
+
+  $('#btnReset').onclick = function () {
+    state.opts = Object.assign({}, DEF);
+    save(); render(); syncControls(); toast('版式已恢复默认');
+  };
+
+  function syncControls() {
+    $('#angle').value = state.opts.angle; $('#vAngle').textContent = state.opts.angle + '°';
+    $('#rowGap').value = state.opts.rowGap; $('#vRowGap').textContent = state.opts.rowGap;
+    $('#colW').value = state.opts.colW; $('#vColW').textContent = state.opts.colW;
+    $('#pxPerYear').value = state.opts.pxPerYear; $('#vPx').textContent = state.opts.pxPerYear;
+    $('#gapX').value = state.opts.gapX; $('#vGap').textContent = state.opts.gapX;
+    $('#fs').value = state.opts.fs; $('#vFs').textContent = state.opts.fs;
+    $('#showBullets').checked = !!state.opts.showBullets;
+    $('#showImgSlot').checked = !!state.opts.showImgSlot;
+    $('#showEraBands').checked = !!state.opts.showEraBands;
+    Array.prototype.forEach.call($('#segSegments').querySelectorAll('button'), function (b) {
+      b.classList.toggle('on', String(b.getAttribute('data-v')) === String(state.opts.segments));
+    });
+    Array.prototype.forEach.call($('#segTheme').querySelectorAll('button'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-v') === state.opts.theme);
+    });
+  }
+
+  /* 启动 */
+  load();
+  syncControls();
+  render();
+  setZoom(1);
+  toast('Ctrl + 滚轮缩放 · 拖动平移 · 点『适应窗口』看全幅');
+  window.addEventListener('resize', function () { applyZoom(); });
+
+  /* 供自动化检查 */
+  window.__FB = { scene: function () { return scene; }, state: state, render: render };
+})();
+</script>
+</body>
+</html>
