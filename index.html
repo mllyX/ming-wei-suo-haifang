@@ -35,8 +35,23 @@
   #zoomVal{min-width:46px;text-align:center;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
   /* ---------- 布局 ---------- */
   .layout{flex:1;display:flex;min-height:0}
-  .panel{width:288px;flex:0 0 288px;overflow-y:auto;background:var(--panel);
-         border-right:1px solid var(--line);padding:12px 14px 40px}
+  .panel{width:288px;flex:0 0 288px;overflow-y:auto;overflow-x:hidden;background:var(--panel);
+         border-right:1px solid var(--line);padding:12px 14px 40px;
+         transition:flex-basis .24s ease,width .24s ease,padding .24s ease,border-color .24s ease}
+  html.panel-collapsed .panel{flex-basis:0;width:0;min-width:0;padding-left:0;padding-right:0;border-right-width:0;overflow:hidden}
+  .panel-head{position:sticky;top:-12px;z-index:3;display:flex;align-items:center;justify-content:space-between;
+              margin:-12px -14px 12px;padding:11px 14px 9px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .panel-head span{font-size:11px;letter-spacing:2.4px;color:var(--ink3);font-weight:600}
+  .mini{padding:2px 9px;font-size:12px;line-height:1.35;border-radius:5px;background:#fff}
+  .panel-tab{position:fixed;left:0;top:46%;z-index:40;writing-mode:vertical-rl;letter-spacing:3px;
+             padding:15px 7px;border:0;border-radius:0 8px 8px 0;background:var(--ink);color:#fdf8ec;
+             font-size:12px;cursor:pointer;opacity:0;pointer-events:none;
+             transform:translateY(-50%) translateX(-6px);
+             transition:opacity .22s ease,transform .22s ease,background .15s;
+             box-shadow:2px 0 12px rgba(40,30,15,.18)}
+  html.panel-collapsed .panel-tab{opacity:1;pointer-events:auto;transform:translateY(-50%)}
+  .panel-tab:hover{background:#1b242c}
+  @media (max-width:900px){ .panel-tab{display:none} }
   #stage{flex:1;min-width:0;overflow:auto;padding:18px;position:relative}
   #canvas{display:inline-block;background:#fff;box-shadow:0 6px 30px rgba(60,50,30,.18);line-height:0}
   #canvas svg{display:block}
@@ -140,6 +155,10 @@
 
 <div class="layout">
   <aside class="panel" id="panel">
+    <div class="panel-head">
+      <span>调 节</span>
+      <button class="mini" id="panelCollapse" title="收起面板（Ctrl+B）">‹‹ 收起</button>
+    </div>
     <div class="grp">
       <h3>版式</h3>
       <div class="row"><label>分卷</label>
@@ -206,6 +225,9 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<button class="panel-tab" id="panelTab" title="展开调节面板">调节</button>
+
+<script>try{if(localStorage.getItem('ming-fishbone-panel')==='1')document.documentElement.classList.add('panel-collapsed');}catch(e){}</script>
 
 <script src="src/data.js"></script>
 <script src="src/measure.js"></script>
@@ -552,6 +574,7 @@
 
   /* 画布交互 */
   $('#canvas').addEventListener('click', function (e) {
+    if (document.body.classList.contains('panel-open')) document.body.classList.remove('panel-open');
     var g = e.target.closest ? e.target.closest('.ev') : null;
     if (g) openDrawer(g.getAttribute('data-id'));
   });
@@ -584,7 +607,32 @@
   $('#btnSvg').onclick = exportSVG;
   $('#btnPng').onclick = exportPNG;
   $('#btnPrint').onclick = function () { window.print(); };
-  $('#btnPanel').onclick = function () { document.body.classList.toggle('panel-open'); };
+  /* 侧栏收起 / 展开 */
+  var PANEL_KEY = 'ming-fishbone-panel';
+  function isNarrow() { return window.matchMedia('(max-width:900px)').matches; }
+  function togglePanel() {
+    if (isNarrow()) {                       /* 窄屏：面板是浮层，开/关 */
+      document.body.classList.toggle('panel-open');
+      return;
+    }
+    var collapsed = document.documentElement.classList.toggle('panel-collapsed');
+    try { localStorage.setItem(PANEL_KEY, collapsed ? '1' : '0'); } catch (e) {}
+  }
+  $('#btnPanel').onclick = togglePanel;
+  $('#panelCollapse').onclick = togglePanel;
+  $('#panelTab').onclick = togglePanel;
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if ($('#drawer').classList.contains('open')) closeDrawer();
+      else if (document.body.classList.contains('panel-open')) document.body.classList.remove('panel-open');
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+      e.preventDefault();
+      togglePanel();
+    }
+  });
 
   $('#btnClearImg').onclick = function () {
     if (!Object.keys(state.images).length) { toast('当前没有配图'); return; }
